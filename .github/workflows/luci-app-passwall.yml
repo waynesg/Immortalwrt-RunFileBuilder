@@ -129,7 +129,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git clone https://x-access-token:${{ secrets.REPO_PUSH_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
+          git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
           
           cp makeself/passwall_x86_64_*.run target-repo/extra-packages/
           
