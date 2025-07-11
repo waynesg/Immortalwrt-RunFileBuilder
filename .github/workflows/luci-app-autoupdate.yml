@@ -23,13 +23,13 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y build-essential libncurses5-dev libssl-dev unzip curl jq git
+          sudo apt install -y build-essential libncurses5-dev libssl-dev unzip curl jq git zstd
 
       - name: Download and extract OpenWrt SDK
         run: |
-          mkdir sdk && cd sdk
-          curl -LO https://mirrors.aliyun.com/openwrt/releases/24.10.2/targets/x86/64/openwrt-sdk-24.10.2-x86-64_gcc-13.2.0_musl.Linux-x86_64.tar.xz
-          tar -xf openwrt-sdk-*.tar.xz --strip-components=1
+          mkdir -p sdk && cd sdk
+          curl -LO https://downloads.openwrt.org/releases/24.10.2/targets/x86/64/openwrt-sdk-24.10.2-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+          tar --use-compress-program=unzstd -xf openwrt-sdk-24.10.2-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst --strip-components=1
           ./scripts/feeds update -a || true
           ./scripts/feeds install -a || true
 
