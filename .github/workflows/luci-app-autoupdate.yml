@@ -1,0 +1,73 @@
+name: Build luci-app-autoupdate .run package
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout RunFileBuilder repo
+        uses: actions/checkout@v3
+
+      - name: Set environment variables
+        run: |
+          echo "REPO=https://github.com/waynesg/luci-app-autoupdate.git" >> $GITHUB_ENV
+          echo "BRANCH=main" >> $GITHUB_ENV
+          echo "PKG_NAME=luci-app-autoupdate" >> $GITHUB_ENV
+          echo "TARGET=x86_64" >> $GITHUB_ENV
+          echo "TAG=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
+          echo "RUN_FILE=${PKG_NAME}_${TAG}_${TARGET}.run" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential libncurses5-dev libssl-dev unzip curl jq git
+
+      - name: Download and extract OpenWrt SDK
+        run: |
+          mkdir sdk && cd sdk
+          curl -LO https://mirrors.aliyun.com/openwrt/releases/24.10.2/targets/x86/64/openwrt-sdk-24.10.2-x86-64_gcc-13.2.0_musl.Linux-x86_64.tar.xz
+          tar -xf openwrt-sdk-*.tar.xz --strip-components=1
+          ./scripts/feeds update -a || true
+          ./scripts/feeds install -a || true
+
+      - name: Clone luci-app-autoupdate
+        run: |
+          git clone --depth=1 $REPO -b $BRANCH package/$PKG_NAME
+
+      - name: Build luci-app-autoupdate
+        run: |
+          cd sdk
+          make defconfig
+          make package/$PKG_NAME/compile V=s
+
+      - name: Collect .ipk files
+        run: |
+          mkdir -p out && cp sdk/bin/packages/*/*/*.ipk out/
+
+      - name: Clone makeself
+        run: git clone https://github.com/megastep/makeself.git
+
+      - name: Build .run package
+        run: |
+          mkdir appdir
+          cp out/*.ipk appdir/
+          chmod +x makeself/makeself.sh
+          makeself/makeself.sh appdir ${{ env.RUN_FILE }} "AutoBuild" ""
+
+      - name: Check final file
+        run: ls -lh *.run
+
+      - name: Push .run file to Immortalwrt-ImageBuilder
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
+          cp ${{ env.RUN_FILE }} target-repo/extra-packages/
+          cd target-repo
+          git add extra-packages/${{ env.RUN_FILE }}
+          git commit -m "🤖 自动同步: ${{ env.RUN_FILE }}"
+          git push
