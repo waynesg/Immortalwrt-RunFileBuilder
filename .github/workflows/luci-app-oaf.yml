@@ -13,10 +13,15 @@ jobs:
 
       - name: Set environment variables
         run: |
-          echo "TAG=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
-          echo "TARGET=x86_64" >> $GITHUB_ENV
-          echo "PKG_NAME=luci-app-oaf" >> $GITHUB_ENV
-          echo "RUN_FILE=luci-app-oaf_${TAG}_${TARGET}.run" >> $GITHUB_ENV
+          TAG=$(date +%Y%m%d-%H%M)
+          TARGET=all
+          PKG_NAME=luci-app-oaf
+          RUN_FILE="${PKG_NAME}_${TAG}_${TARGET}.run"
+
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "TARGET=$TARGET" >> $GITHUB_ENV
+          echo "PKG_NAME=$PKG_NAME" >> $GITHUB_ENV
+          echo "RUN_FILE=$RUN_FILE" >> $GITHUB_ENV
 
       - name: Download .ipk and .tar.gz files
         run: |
