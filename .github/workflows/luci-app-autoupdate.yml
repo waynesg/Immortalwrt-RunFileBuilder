@@ -31,6 +31,12 @@ jobs:
           curl -LO https://downloads.openwrt.org/releases/24.10.2/targets/x86/64/openwrt-sdk-24.10.2-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst
           tar --use-compress-program=unzstd -xf openwrt-sdk-24.10.2-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst --strip-components=1
 
+      - name: Install feeds and luci
+        run: |
+          cd sdk
+          ./scripts/feeds update luci
+          ./scripts/feeds install -a -p luci
+
       - name: Clone luci-app-autoupdate into SDK
         run: |
           git clone --depth=1 $REPO -b $BRANCH sdk/package/$PKG_NAME
