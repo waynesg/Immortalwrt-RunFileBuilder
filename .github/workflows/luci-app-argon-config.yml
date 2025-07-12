@@ -15,9 +15,7 @@ jobs:
         run: |
           echo "PKG_NAME=luci-app-argon-config" >> $GITHUB_ENV
           echo "VERSION=v0.9" >> $GITHUB_ENV
-          echo "TARGET=x86_64" >> $GITHUB_ENV
           echo "DATE=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
-          echo "RUN_FILE=${PKG_NAME}_${{ env.VERSION }}_${{ env.DATE }}.run" >> $GITHUB_ENV
 
       - name: Download .ipk files
         run: |
