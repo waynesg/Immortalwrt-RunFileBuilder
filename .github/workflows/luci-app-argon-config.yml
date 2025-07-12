@@ -13,18 +13,26 @@ jobs:
 
       - name: Set environment variables
         run: |
-          echo "TAG=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
+          TAG=$(date +%Y%m%d-%H%M)
+          echo "TAG=$TAG" >> $GITHUB_ENV
           echo "TARGET=all" >> $GITHUB_ENV
           echo "PKG_NAME=luci-app-argon-config" >> $GITHUB_ENV
-          echo "RUN_FILE=luci-app-argon-config_${TAG}_${TARGET}.run" >> $GITHUB_ENV
+          echo "RUN_FILE=luci-app-argon-config_${TAG}_all.run" >> $GITHUB_ENV
 
       - name: Download .ipk files
         run: |
           mkdir build_dir
           cd build_dir
-          curl -LO https://github.com/jerrykuku/luci-app-argon-config/releases/download/v0.9/luci-app-argon-config_0.9_all.ipk
-          curl -LO https://github.com/jerrykuku/luci-app-argon-config/releases/download/v0.9/luci-i18n-argon-config-zh-cn_git-22.114.24542-d1474ba_all.ipk
-          ls -lh
+
+          APP_URL=$(curl -s https://api.github.com/repos/jerrykuku/luci-app-argon-config/releases/latest \
+            | jq -r '.assets[] | select(.name | test("luci-app-argon-config.*_all.ipk")) | .browser_download_url')
+          echo "App URL: $APP_URL"
+          curl -LO $APP_URL
+
+          I18N_URL=$(curl -s https://api.github.com/repos/jerrykuku/luci-app-argon-config/releases/latest \
+            | jq -r '.assets[] | select(.name | test("luci-i18n-argon-config-zh-cn.*_all.ipk")) | .browser_download_url')
+          echo "I18N URL: $I18N_URL"
+          curl -LO $I18N_URL
 
       - name: Create install.sh
         run: |
@@ -42,10 +50,18 @@ jobs:
         run: |
           chmod +x makeself/makeself.sh
           chmod +x build_dir/install.sh
-          makeself/makeself.sh build_dir "${{ env.RUN_FILE }}" "Auto install luci-app-argon-config" ./install.sh
+          echo "RUN_FILE=$RUN_FILE"
+          makeself/makeself.sh build_dir "$RUN_FILE" "Auto install luci-app-argon-config" ./install.sh
 
       - name: Check .run file
-        run: ls -lh "${{ env.RUN_FILE }}"
+        run: ls -lh "$RUN_FILE"
+
+      - name: Inspect .run contents
+        run: |
+          mkdir tmp
+          sh "$RUN_FILE" --target tmp --noexec
+          echo "=== Contents inside .run ==="
+          ls -lh tmp
 
       - name: Push to Immortalwrt-ImageBuilder
         run: |
@@ -53,8 +69,8 @@ jobs:
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
           git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
-          cp "${{ env.RUN_FILE }}" target-repo/extra-packages/
+          cp "$RUN_FILE" target-repo/extra-packages/
           cd target-repo
-          git add extra-packages/"${{ env.RUN_FILE }}"
-          git commit -m "🤖 自动同步: ${{ env.RUN_FILE }}"
+          git add extra-packages/"$RUN_FILE"
+          git commit -m "🤖 自动同步: $RUN_FILE"
           git push
