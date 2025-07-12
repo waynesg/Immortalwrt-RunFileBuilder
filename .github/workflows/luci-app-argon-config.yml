@@ -40,10 +40,11 @@ jobs:
         run: |
           chmod +x makeself/makeself.sh
           chmod +x build_dir/install.sh
-          makeself/makeself.sh build_dir "${{ env.RUN_FILE }}" "Auto install luci-app" ./install.sh
+          makeself/makeself.sh build_dir "${{ env.RUN_FILE }}" "Auto install luci-app-argon-config" ./install.sh
 
-      - name: Show final artifact
-        run: ls -lh *.run
+      - name: Check .run file
+        run: |
+          ls -lh "${{ env.RUN_FILE }}"
 
       - name: Push to Immortalwrt-ImageBuilder
         run: |
