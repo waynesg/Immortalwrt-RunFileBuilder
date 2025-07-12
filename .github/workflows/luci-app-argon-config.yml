@@ -1,0 +1,62 @@
+name: Build argon-config .run file
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout RunFileBuilder
+        uses: actions/checkout@v3
+
+      - name: Set env for package
+        run: |
+          echo "PKG_NAME=luci-app-argon-config" >> $GITHUB_ENV
+          echo "TARGET=all" >> $GITHUB_ENV
+
+      - name: Fetch latest tag from luci-app-argon-config
+        id: fetch_tag
+        run: |
+          latest_tag=$(curl -s https://api.github.com/repos/jerrykuku/luci-app-argon-config/releases/latest | jq -r '.tag_name')
+          version=$(echo "$latest_tag" | sed 's/^v//')  # 去掉v前缀
+          echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
+          echo "PKG_VERSION=$version" >> $GITHUB_ENV
+          echo "RUN_FILE=luci-app-argon-config_${version}_$(date +%Y%m%d-%H%M).run" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y curl makeself
+
+      - name: Download .ipk
+        run: |
+          mkdir -p build_dir
+          curl -LO https://github.com/jerrykuku/luci-app-argon-config/releases/download/${{ env.LATEST_TAG }}/luci-app-argon-config_${{ env.PKG_VERSION }}_all.ipk
+          mv luci-app-argon-config_${{ env.PKG_VERSION }}_all.ipk build_dir/
+
+      - name: Create install.sh
+        run: |
+          cat <<EOF > build_dir/install.sh
+          #!/bin/sh
+          opkg update
+          opkg install luci-app-argon-config_${{ env.PKG_VERSION }}_all.ipk
+          EOF
+          chmod +x build_dir/install.sh
+
+      - name: Create .run package
+        run: |
+          makeself.sh build_dir ${{ env.RUN_FILE }} "Auto install luci-app-argon-config" ./install.sh
+
+      - name: Upload .run file to Immortalwrt-ImageBuilder
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
+          cp ${{ env.RUN_FILE }} target-repo/extra-packages/
+          cd target-repo
+          git add extra-packages/${{ env.RUN_FILE }}
+          git commit -m "🤖 自动同步: ${{ env.RUN_FILE }}"
+          git push
