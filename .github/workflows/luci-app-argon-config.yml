@@ -45,10 +45,13 @@ jobs:
           EOF
           chmod +x build_dir/install.sh
 
+      - name: Clone makeself
+        run: git clone https://github.com/megastep/makeself.git
+
       - name: Create .run package
         run: |
-          makeself.sh build_dir ${{ env.RUN_FILE }} "Auto install luci-app-argon-config" ./install.sh
-
+          ./makeself/makeself.sh build_dir ${{ env.RUN_FILE }} "Auto install luci-app-argon-config" ./install.sh
+          
       - name: Upload .run file to Immortalwrt-ImageBuilder
         run: |
           git config --global user.name "github-actions[bot]"
