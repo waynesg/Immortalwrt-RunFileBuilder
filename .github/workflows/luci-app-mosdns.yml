@@ -138,6 +138,6 @@ jobs:
           cd target-repo
           git checkout main
           
-          git add extra-packages/pmosdns_*.run
+          git add extra-packages/mosdns_*.run
           git commit -m "🤖 自动同步 Passwall RunFile: $(date +%F_%T)"
           git push
