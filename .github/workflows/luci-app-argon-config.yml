@@ -30,7 +30,7 @@ jobs:
           curl -LO $APP_URL
 
           I18N_URL=$(curl -s https://api.github.com/repos/jerrykuku/luci-app-argon-config/releases/latest \
-            | jq -r '.assets[] | select(.name | test("luci-i18n-argon-config-zh-cn.*_all.ipk")) | .browser_download_url')
+            | jq -r '.assets[] | select(.name | test("luci-i18n-argon-config-zh-cn_*.ipk")) | .browser_download_url')
           echo "I18N URL: $I18N_URL"
           curl -LO $I18N_URL
 
