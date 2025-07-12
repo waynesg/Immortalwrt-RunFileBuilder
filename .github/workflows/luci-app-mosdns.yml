@@ -34,7 +34,8 @@ jobs:
           fi
 
           # 创建存放目录
-          mkdir -p mosdns_x86_64 mosdns_aarch64_cortex-a53
+          mkdir -p mosdns_x86_64 
+          # mosdns_aarch64_cortex-a53
 
           # 下载文件函数
           download_file() {
@@ -61,17 +62,17 @@ jobs:
 
           # 下载文件到对应目录
           download_file "$mosdns_x86_64" "mosdns_x86_64"
-          download_file "$mosdns_aarch64_cortex_a53" "mosdns_aarch64_cortex-a53"
+          #download_file "$mosdns_aarch64_cortex_a53" "mosdns_aarch64_cortex-a53"
           download_file "$v2dat_x86_64" "mosdns_x86_64"
-          download_file "$v2dat_aarch64_cortex_a53" "mosdns_aarch64_cortex-a53"
+          #download_file "$v2dat_aarch64_cortex_a53" "mosdns_aarch64_cortex-a53"
           download_file "$luci_app" "mosdns_x86_64"
-          download_file "$luci_app" "mosdns_aarch64_cortex-a53"
+          #download_file "$luci_app" "mosdns_aarch64_cortex-a53"
           download_file "$luci_i18n" "mosdns_x86_64"
-          download_file "$luci_i18n" "mosdns_aarch64_cortex-a53"
+          #download_file "$luci_i18n" "mosdns_aarch64_cortex-a53"
           download_file "$geoip" "mosdns_x86_64"
-          download_file "$geoip" "mosdns_aarch64_cortex-a53"
+          #download_file "$geoip" "mosdns_aarch64_cortex-a53"
           download_file "$geosite" "mosdns_x86_64"
-          download_file "$geosite" "mosdns_aarch64_cortex-a53"
+          #download_file "$geosite" "mosdns_aarch64_cortex-a53"
 
           echo "Download completed."
 
@@ -88,30 +89,24 @@ jobs:
           opkg install *.ipk
           EOF
           chmod +x mosdns_x86_64/install.sh
-          cp mosdns_x86_64/install.sh mosdns_aarch64_cortex-a53/install.sh
+        # cp mosdns_x86_64/install.sh mosdns_aarch64_cortex-a53/install.sh
           
 
       - name: Move mosdns directories to makeself
         run: |
           mv mosdns_x86_64 makeself/
-          mv mosdns_aarch64_cortex-a53 makeself/
+        #  mv mosdns_aarch64_cortex-a53 makeself/
 
       - name: Create self-extracting packages
         run: |
           cd makeself
           ./makeself.sh mosdns_x86_64/ mosdns_${{ env.LATEST_TAG }}_x86_64.run "by github action" ./install.sh
-          ./makeself.sh mosdns_aarch64_cortex-a53/ mosdns_${{ env.LATEST_TAG }}_aarch64_cortex-a53.run "by github action" ./install.sh
+         # ./makeself.sh mosdns_aarch64_cortex-a53/ mosdns_${{ env.LATEST_TAG }}_aarch64_cortex-a53.run "by github action" ./install.sh
           
 
       - name: Check file sizes
         run: |
           ls -lh makeself/mosdns_*.run
-
-      - name: Fetch latest release details
-        id: fetch_release_details
-        run: |
-          extra_content="![Github](https://img.shields.io/badge/mosdns.run-123456?logo=github&logoColor=fff&labelColor=yellow&style=for-the-badge) [![Github](https://img.shields.io/badge/国内加速站下载-FC7C0D?logo=github&logoColor=fff&labelColor=000&style=for-the-badge)](https://wkdaily.cpolar.cn/archives/1) ![GitHub Downloads (all assets, specific tag)](https://img.shields.io/github/downloads/wukongdaily/RunFilesBuilder/${{ env.LATEST_TAG }}/total?style=for-the-badge&labelColor=black&color=%2325c2a0)"
-          sed -i "1i$extra_content" "${{ github.workspace }}/common.md"
 
     
       - name: Upload run files as release assets
