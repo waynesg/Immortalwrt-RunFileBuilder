@@ -44,9 +44,20 @@ jobs:
       - name: Configure and build package
         run: |
           cd sdk
-          make defconfig
-          make package/$PKG_NAME/compile V=s
+          echo "CONFIG_PACKAGE_liblucihttp=y" >> .config
+          echo "CONFIG_PACKAGE_liblucihttp-lua=y" >> .config
+          echo "CONFIG_PACKAGE_liblua=y" >> .config
+          echo "CONFIG_PACKAGE_luci-app-autoupdate=y" >> .config
 
+          make defconfig
+
+          #   可选但推荐：单独先构建依赖，能更快发现错误
+          make package/libs/lua/compile V=s || true
+          make package/libs/luajit/compile V=s || true
+          make package/feeds/luci/lucihttp/compile V=s || true
+
+          # 正式编译 luci-app-autoupdate
+          make package/$PKG_NAME/compile V=s
       - name: Collect .ipk files
         run: |
           mkdir -p out
