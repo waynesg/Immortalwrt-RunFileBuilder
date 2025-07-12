@@ -16,7 +16,7 @@ jobs:
           echo "PKG_NAME=luci-theme-argon" >> $GITHUB_ENV
           echo "TAG=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
           echo "TARGET=all" >> $GITHUB_ENV
-          echo "RUN_FILE=${PKG_NAME}_${TAG}_${TARGET}.run" >> $GITHUB_ENV
+          echo "RUN_FILE=luci-theme-argon_$(date +%Y%m%d-%H%M)_all.run" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
