@@ -11,11 +11,12 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set variables
+      - name: Set environment variables
         run: |
           echo "PKG_NAME=luci-app-argon-config" >> $GITHUB_ENV
-          echo "VERSION=v0.9" >> $GITHUB_ENV
-          echo "DATE=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
+          echo "TAG=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
+          echo "TARGET=all" >> $GITHUB_ENV
+          echo "RUN_FILE=luci-app-argon-config_${TAG}_${TARGET}.run" >> $GITHUB_ENV
 
       - name: Download .ipk files
         run: |
