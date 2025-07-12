@@ -18,7 +18,10 @@ jobs:
           echo "PKG_NAME=luci-app-autoupdate" >> $GITHUB_ENV
           echo "TARGET=x86_64" >> $GITHUB_ENV
           echo "TAG=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
-          echo "RUN_FILE=luci-app-autoupdate_${TAG}_${TARGET}.run" >> $GITHUB_ENV
+
+      - name: Construct run filename
+        run: |
+          echo "RUN_FILE=luci-app-autoupdate_${{ env.TAG }}_${{ env.TARGET }}.run" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
