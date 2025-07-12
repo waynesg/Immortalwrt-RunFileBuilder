@@ -27,17 +27,11 @@ jobs:
 
           APP_URL=$(curl -s $BASE_URL | jq -r '.assets[] | select(.name | test("luci-app-oaf.*_all.ipk")) | .browser_download_url')
           I18N_URL=$(curl -s $BASE_URL | jq -r '.assets[] | select(.name | test("luci-i18n-oaf-zh-cn.*_all.ipk")) | .browser_download_url')
-          MODULE_URL=$(curl -s $BASE_URL | jq -r '.assets[] | select(.name | test("openwrt.*-oaf.*\\.tar\\.gz")) | .browser_download_url')
+          MODULE_URL=$(curl -s $BASE_URL | jq -r '.assets[] | select(.name | test("openwrt*-x86_64-kernel.*\\.tar\\.gz")) | .browser_download_url')
 
           echo "App URL: $APP_URL"
           echo "I18N URL: $I18N_URL"
           echo "Module URL: $MODULE_URL"
-
-          # Check for empty URL and fail early
-          if [ -z "$APP_URL" ] || [ -z "$I18N_URL" ] || [ -z "$MODULE_URL" ]; then
-            echo "❌ One or more URLs are empty. Exiting."
-            exit 1
-          fi
 
           curl -LO "$APP_URL"
           curl -LO "$I18N_URL"
