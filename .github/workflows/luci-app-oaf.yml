@@ -1,0 +1,73 @@
+name: Build OpenAppFilter runfile
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set environment variables
+        run: |
+          echo "TAG=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
+          echo "TARGET=x86_64" >> $GITHUB_ENV
+          echo "PKG_NAME=luci-app-oaf" >> $GITHUB_ENV
+          echo "RUN_FILE=luci-app-oaf_${TAG}_${TARGET}.run" >> $GITHUB_ENV
+
+      - name: Download .ipk and .tar.gz files
+        run: |
+          mkdir build_dir
+          cd build_dir
+
+          BASE_URL="https://api.github.com/repos/destan19/OpenAppFilter/releases/latest"
+
+          APP_URL=$(curl -s $BASE_URL | jq -r '.assets[] | select(.name | test("luci-app-oaf.*_all.ipk")) | .browser_download_url')
+          I18N_URL=$(curl -s $BASE_URL | jq -r '.assets[] | select(.name | test("luci-i18n-oaf-zh-cn.*_all.ipk")) | .browser_download_url')
+          MODULE_URL=$(curl -s $BASE_URL | jq -r '.assets[] | select(.name | test("openwrt.*-oaf.*\\.tar\\.gz")) | .browser_download_url')
+
+          echo "App URL: $APP_URL"
+          echo "I18N URL: $I18N_URL"
+          echo "Module URL: $MODULE_URL"
+
+          curl -LO "$APP_URL"
+          curl -LO "$I18N_URL"
+          curl -LO "$MODULE_URL"
+
+      - name: Create install.sh
+        run: |
+          cat <<EOF > build_dir/install.sh
+          #!/bin/sh
+          opkg update
+          opkg install *.ipk
+          tar -xzf *.tar.gz -C /
+          EOF
+          chmod +x build_dir/install.sh
+
+      - name: Clone makeself
+        run: git clone https://github.com/megastep/makeself.git
+
+      - name: Build .run file
+        run: |
+          chmod +x makeself/makeself.sh
+          chmod +x build_dir/install.sh
+          makeself/makeself.sh build_dir "${{ env.RUN_FILE }}" "Auto install luci-app-oaf" ./install.sh
+
+      - name: Check .run file
+        run: |
+          ls -lh "${{ env.RUN_FILE }}"
+
+      - name: Push to Immortalwrt-ImageBuilder
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
+          cp "${{ env.RUN_FILE }}" target-repo/extra-packages/
+          cd target-repo
+          git add extra-packages/"${{ env.RUN_FILE }}"
+          git commit -m "🤖 自动同步: ${{ env.RUN_FILE }}"
+          git push
