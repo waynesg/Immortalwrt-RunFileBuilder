@@ -29,13 +29,6 @@ jobs:
           curl -LO https://downloads.openwrt.org/releases/24.10.2/targets/x86/64/openwrt-sdk-24.10.2-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst
           tar --use-compress-program=unzstd -xf openwrt-sdk-24.10.2-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst --strip-components=1
 
-      - name: Prepare feeds
-        run: |
-          cd sdk
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
-          make defconfig
-
       - name: Clone luci-app-subconverter and sub-web
         run: |
           git clone https://github.com/kiddin9/openwrt-subconverter.git temp-sub
@@ -43,11 +36,16 @@ jobs:
           cp -r temp-sub/sub-web sdk/package/
           rm -rf temp-sub
 
-      - name: Build subconverter packages
+      - name: Configure build
         run: |
           cd sdk
-          make tools/install -j$(nproc) V=s
-          make toolchain/install -j$(nproc) V=s
+          echo "CONFIG_PACKAGE_luci-app-subconverter=y" >> .config
+          echo "CONFIG_PACKAGE_sub-web=y" >> .config
+          make defconfig
+
+      - name: Build packages
+        run: |
+          cd sdk
           make package/luci-app-subconverter/compile -j$(nproc) V=s
           make package/sub-web/compile -j$(nproc) V=s
 
@@ -55,7 +53,6 @@ jobs:
         run: |
           mkdir -p build_dir
           find sdk/bin/packages/ -name '*.ipk' -exec cp {} build_dir/ \;
-          cp -r sdk/package/sub-web/* build_dir/
 
       - name: Create install.sh
         run: |
@@ -78,10 +75,9 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
           git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
-          cp ${{ env.RUN_FILE }} target-repo/extra-packages/
+          cp "${{ env.RUN_FILE }}" target-repo/extra-packages/
           cd target-repo
-          git add extra-packages/${{ env.RUN_FILE }}
+          git add extra-packages/"${{ env.RUN_FILE }}"
           git commit -m "🤖 自动同步: ${{ env.RUN_FILE }}"
           git push
