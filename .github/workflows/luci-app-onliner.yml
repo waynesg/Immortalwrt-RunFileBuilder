@@ -1,4 +1,4 @@
-  name: Build luci-app-onliner runfile
+name: Build luci-app-onliner runfile
 
 on:
   workflow_dispatch:
