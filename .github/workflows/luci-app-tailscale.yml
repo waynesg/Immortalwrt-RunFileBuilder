@@ -18,13 +18,16 @@ jobs:
           echo "PKG_NAME=luci-app-tailscale" >> $GITHUB_ENV
           echo "REPO=asvow/luci-app-tailscale" >> $GITHUB_ENV
           echo "RELEASE_TAG=v1.2.6" >> $GITHUB_ENV
-          echo "RUN_FILE=luci-app-tailscale_${TAG}_${TARGET}.run" >> $GITHUB_ENV
+
+      - name: Set run file name
+        run: |
+          echo "RUN_FILE=luci-app-tailscale_${{ env.TAG }}_${{ env.TARGET }}.run" >> $GITHUB_ENV
 
       - name: Create build directory and download .ipk files
         run: |
           mkdir build_dir && cd build_dir
 
-          API_URL="https://api.github.com/repos/${REPO}/releases/tags/${RELEASE_TAG}"
+          API_URL="https://api.github.com/repos/${{ env.REPO }}/releases/tags/${{ env.RELEASE_TAG }}"
 
           APP_URL=$(curl -s $API_URL | jq -r '.assets[] | select(.name | test("luci-app-tailscale_.*_all.ipk")) | .browser_download_url')
           echo "App URL: $APP_URL"
@@ -62,8 +65,14 @@ jobs:
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
+
+          # 删除旧的 luci-app-tailscale*.run（除当前构建的）
+          find target-repo/extra-packages/ -type f -name "luci-app-tailscale_*.run" ! -name "${{ env.RUN_FILE }}" -delete
+
           cp "${{ env.RUN_FILE }}" target-repo/extra-packages/
+
           cd target-repo
+          git checkout main
           git add extra-packages/"${{ env.RUN_FILE }}"
-          git commit -m "🤖 自动同步: ${{ env.RUN_FILE }}"
+          git commit -m "🤖 自动同步 luci-app-tailscale RunFile: ${{ env.RUN_FILE }}"
           git push
