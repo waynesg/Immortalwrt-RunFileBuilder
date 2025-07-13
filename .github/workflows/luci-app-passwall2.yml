@@ -10,7 +10,9 @@ name: NEW Make Passwall2 run files
 
 on:
   workflow_dispatch:
-
+  schedule:
+    - cron: '0 0 * * *'
+    
 jobs:
   build:
     runs-on: ubuntu-22.04
