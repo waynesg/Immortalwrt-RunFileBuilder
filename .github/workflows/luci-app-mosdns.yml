@@ -43,12 +43,12 @@ jobs:
             [ $? -ne 0 ] && echo "Error downloading $filename" && exit 1
           }
 
-          mosdns_x86_64=$(grep "mosdns_5" urls.txt | grep "x86_64.ipk" | head -1)
-          v2dat_x86_64=$(grep "v2dat_" urls.txt | grep "x86_64.ipk" | head -1)
-          luci_app=$(grep "luci-app-mosdns_" urls.txt | head -1)
-          luci_i18n=$(grep "luci-i18n-mosdns-zh-cn" urls.txt | head -1)
-          geoip=$(grep "v2ray-geoip" urls.txt | head -1)
-          geosite=$(grep "v2ray-geosite" urls.txt | head -1)
+          mosdns_x86_64=$(grep -Ei 'mosdns_5.*x86_64.*\.ipk$' urls.txt | head -n1)
+          v2dat_x86_64=$(grep -Ei 'v2dat_.*x86_64.*\.ipk$' urls.txt | head -n1)
+          luci_app=$(grep -Ei 'luci-app-mosdns_.*\.ipk$' urls.txt | head -n1)
+          luci_i18n=$(grep -Ei 'luci-i18n-mosdns-zh-cn_.*\.ipk$' urls.txt | head -n1)
+          geoip=$(grep -Ei 'v2ray-geoip.*\.gz$' urls.txt | head -n1)
+          geosite=$(grep -Ei 'v2ray-geosite.*\.gz$' urls.txt | head -n1)
 
           echo "Resolved URLs:"
           echo "$mosdns_x86_64"
