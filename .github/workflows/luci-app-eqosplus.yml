@@ -30,7 +30,7 @@ jobs:
           cd build_dir
 
           TAG_NAME="luci-app-eqosplus v1.2.5"
-          ENCODED_TAG=$(echo "$TAG_NAME" | jq -s -R -r @uri)
+          ENCODED_TAG=$(echo -n "$TAG_NAME" | jq -s -R -r @uri)
 
           RELEASE_URL="https://api.github.com/repos/sirpdboy/luci-app-eqosplus/releases/tags/$ENCODED_TAG"
 
