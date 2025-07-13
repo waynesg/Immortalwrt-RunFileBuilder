@@ -16,24 +16,25 @@ jobs:
           echo "TAG=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
           echo "TARGET=all" >> $GITHUB_ENV
           echo "PKG_NAME=luci-app-eqosplus" >> $GITHUB_ENV
-          echo "RELEASE_TAG=luci-app-eqosplus v1.2.5" >> $GITHUB_ENV
-          echo "RUN_FILE=luci-app-eqosplus_${TAG}_${TARGET}.run" >> $GITHUB_ENV
           echo "REPO=sirpdboy/luci-app-eqosplus" >> $GITHUB_ENV
+          echo "RELEASE_TAG_RAW=luci-app-eqosplus v1.2.5" >> $GITHUB_ENV
+          echo "RELEASE_TAG_ENC=luci-app-eqosplus%20v1.2.5" >> $GITHUB_ENV
+          echo "RUN_FILE=luci-app-eqosplus_${TAG}_${TARGET}.run" >> $GITHUB_ENV
 
       - name: Download .ipk files
         run: |
           mkdir -p build_dir && cd build_dir
 
-          BASE_URL="https://api.github.com/repos/${REPO}/releases/tags/${RELEASE_TAG}"
+          BASE_URL="https://api.github.com/repos/${REPO}/releases/tags/${RELEASE_TAG_ENC}"
 
           APP_URL=$(curl -s "$BASE_URL" | jq -r '.assets[] | select(.name | test("luci-app-eqosplus.*_all.ipk")) | .browser_download_url')
           echo "App URL: $APP_URL"
-          curl -LO "$APP_URL"
+          [ -n "$APP_URL" ] && curl -LO "$APP_URL"
 
           I18N_URL=$(curl -s "$BASE_URL" | jq -r '.assets[] | select(.name | test("luci-i18n-eqosplus-zh-cn_.*\\.ipk")) | .browser_download_url')
           echo "I18N URL: $I18N_URL"
-          curl -LO "$I18N_URL"
-
+          [ -n "$I18N_URL" ] && curl -LO "$I18N_URL"
+          
       - name: Create install.sh
         run: |
           cat <<EOF > build_dir/install.sh
