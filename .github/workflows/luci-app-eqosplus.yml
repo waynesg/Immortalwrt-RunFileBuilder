@@ -7,36 +7,42 @@ jobs:
   build:
     runs-on: ubuntu-22.04
 
+    env:
+      REPO: sirpdboy/luci-app-eqosplus
+      RELEASE_TAG: v1.2.5
+      TARGET: all
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
 
       - name: Set environment variables
         run: |
-          echo "TAG=${TAG:-unknown}" >> $GITHUB_ENV
-          echo "TARGET=${TARGET:-all}" >> $GITHUB_ENV
-          
+          TIMESTAMP=$(date +%Y%m%d-%H%M)
+          echo "TAG=${TIMESTAMP}" >> $GITHUB_ENV
+
       - name: Download .ipk files
         run: |
-          mkdir build_dir && cd build_dir
+          mkdir build_dir
+          cd build_dir
 
           API_URL="https://api.github.com/repos/${REPO}/releases/tags/${RELEASE_TAG}"
 
-          APP_URL=$(curl -s $API_URL | jq -r '.assets[] | select(.name | test("luci-app-eqosplus.*_all.ipk")) | .browser_download_url')
+          APP_URL=$(curl -s $API_URL | jq -r '.assets[] | select(.name | test("^luci-app-eqosplus.*_all\\.ipk$")) | .browser_download_url')
           echo "App URL: $APP_URL"
           curl -LO "$APP_URL"
 
-          I18N_URL=$(curl -s $API_URL | jq -r '.assets[] | select(.name | test("luci-i18n-eqosplus-zh-cn_.*.ipk")) | .browser_download_url')
+          I18N_URL=$(curl -s $API_URL | jq -r '.assets[] | select(.name | test("^luci-i18n-eqosplus-zh-cn_.*\\.ipk$")) | .browser_download_url')
           echo "I18N URL: $I18N_URL"
           curl -LO "$I18N_URL"
 
       - name: Create install.sh
         run: |
           cat <<EOF > build_dir/install.sh
-          #!/bin/sh
-          opkg update
-          opkg install *.ipk
-          EOF
+            #!/bin/sh
+            opkg update
+            opkg install *.ipk
+            EOF
           chmod +x build_dir/install.sh
 
       - name: Clone makeself
@@ -44,12 +50,15 @@ jobs:
 
       - name: Build .run file
         run: |
+          PKG_NAME=luci-app-eqosplus
+          RUN_FILE=${PKG_NAME}_${TAG}_${TARGET}.run
+          echo "RUN_FILE=${RUN_FILE}" >> $GITHUB_ENV
           chmod +x makeself/makeself.sh
           chmod +x build_dir/install.sh
-          ./makeself/makeself.sh build_dir "${{ env.RUN_FILE }}" "Auto install luci-app-eqosplus" ./install.sh
+          ./makeself/makeself.sh build_dir "${RUN_FILE}" "Auto install ${PKG_NAME}" ./install.sh
 
       - name: Check .run file
-        run: ls -lh "${{ env.RUN_FILE }}"
+        run: ls -lh *.run
 
       - name: Push to Immortalwrt-ImageBuilder
         run: |
@@ -57,8 +66,8 @@ jobs:
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
           git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
-          cp "${{ env.RUN_FILE }}" target-repo/extra-packages/
+          cp *.run target-repo/extra-packages/
           cd target-repo
-          git add extra-packages/"${{ env.RUN_FILE }}"
-          git commit -m "🤖 自动同步: ${{ env.RUN_FILE }}"
+          git add extra-packages/*.run
+          git commit -m "🤖 自动同步: luci-app-eqosplus .run"
           git push
