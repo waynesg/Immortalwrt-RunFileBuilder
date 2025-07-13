@@ -8,48 +8,30 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout repo
+      - name: Checkout this repo
         uses: actions/checkout@v3
 
       - name: Set environment variables
         run: |
-          TAG=$(date +%Y%m%d-%H%M)
-          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "TAG=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
           echo "TARGET=all" >> $GITHUB_ENV
           echo "PKG_NAME=luci-app-eqosplus" >> $GITHUB_ENV
-          echo "RUN_FILE=luci-app-eqosplus_${TAG}_all.run" >> $GITHUB_ENV
+          echo "RELEASE_TAG=luci-app-eqosplus v1.2.5" >> $GITHUB_ENV
+          echo "RUN_FILE=luci-app-eqosplus_${TAG}_${TARGET}.run" >> $GITHUB_ENV
+          echo "REPO=sirpdboy/luci-app-eqosplus" >> $GITHUB_ENV
 
-      - name: Install dependencies
+      - name: Download .ipk files
         run: |
-          sudo apt update
-          sudo apt install -y curl jq unzip git build-essential zstd
+          mkdir -p build_dir && cd build_dir
 
-      - name: Download latest .ipk files
-        run: |
-          mkdir build_dir
-          cd build_dir
+          BASE_URL="https://api.github.com/repos/${REPO}/releases/tags/${RELEASE_TAG}"
 
-          TAG_NAME="luci-app-eqosplus v1.2.5"
-          ENCODED_TAG=$(echo -n "$TAG_NAME" | jq -s -R -r @uri)
-
-          RELEASE_URL="https://api.github.com/repos/sirpdboy/luci-app-eqosplus/releases/tags/$ENCODED_TAG"
-
-          echo "Fetching from: $RELEASE_URL"
-
-          ASSET_JSON=$(curl -s "$RELEASE_URL")
-
-          APP_URL=$(echo "$ASSET_JSON" | jq -r '.assets[] | select(.name | test("luci-app-eqosplus.*\\.ipk")) | .browser_download_url')
-          I18N_URL=$(echo "$ASSET_JSON" | jq -r '.assets[] | select(.name | test("luci-i18n-eqosplus-zh-cn.*\\.ipk")) | .browser_download_url')
-
+          APP_URL=$(curl -s "$BASE_URL" | jq -r '.assets[] | select(.name | test("luci-app-eqosplus.*_all.ipk")) | .browser_download_url')
           echo "App URL: $APP_URL"
-          echo "I18N URL: $I18N_URL"
-
-          if [ -z "$APP_URL" ] || [ -z "$I18N_URL" ]; then
-            echo "❌ IPK 下载链接获取失败，检查 tag 或 release 是否正确。"
-            exit 1
-          fi
-
           curl -LO "$APP_URL"
+
+          I18N_URL=$(curl -s "$BASE_URL" | jq -r '.assets[] | select(.name | test("luci-i18n-eqosplus-zh-cn_.*\\.ipk")) | .browser_download_url')
+          echo "I18N URL: $I18N_URL"
           curl -LO "$I18N_URL"
 
       - name: Create install.sh
@@ -67,16 +49,17 @@ jobs:
       - name: Build .run file
         run: |
           chmod +x makeself/makeself.sh
-          chmod +x build_dir/install.sh
           makeself/makeself.sh build_dir "${{ env.RUN_FILE }}" "Auto install luci-app-eqosplus" ./install.sh
 
-      - name: Upload .run file to Immortalwrt-ImageBuilder
+      - name: Check .run file
+        run: ls -lh "${{ env.RUN_FILE }}"
+
+      - name: Push to Immortalwrt-ImageBuilder
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
           git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
-          cp ${{ env.RUN_FILE }} target-repo/extra-packages/
+          cp "${{ env.RUN_FILE }}" target-repo/extra-packages/
           cd target-repo
           git add extra-packages/${{ env.RUN_FILE }}
           git commit -m "🤖 自动同步: ${{ env.RUN_FILE }}"
