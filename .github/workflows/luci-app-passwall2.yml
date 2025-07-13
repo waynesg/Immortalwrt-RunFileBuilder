@@ -27,6 +27,11 @@ jobs:
           latest_tag=$(curl -s https://api.github.com/repos/xiaorouji/openwrt-passwall2/releases/latest | jq -r '.tag_name')
           echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
 
+      - name: Set .run filename
+        run: |
+          DATE=$(date +%Y%m%d)
+          echo "RUN_FILE=luci-app-passwall2_x86_64_${DATE}.run" >> $GITHUB_ENV
+
       - name: Clone makeself repository
         run: git clone https://github.com/megastep/makeself.git
 
@@ -80,8 +85,8 @@ jobs:
       - name: Create self-extracting packages
         run: |
           cd makeself
-          ./makeself.sh passwall_x86_64/ passwall2_x86_64_${{ env.LATEST_TAG }}.run "by github action" ./install.sh
-          # ./makeself.sh passwall_aarch64/ passwall2_aarch64_a53_${{ env.LATEST_TAG }}.run "by github action" ./install.sh
+            + ./makeself.sh passwall_x86_64/ ${{ env.RUN_FILE }} "by github action" ./install.sh
+            # ./makeself.sh passwall_aarch64/ passwall2_aarch64_a53_${{ env.LATEST_TAG }}.run "by github action" ./install.sh
 
       - name: Check file sizes
         run: |
@@ -100,15 +105,13 @@ jobs:
 
           git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
 
-          # 删除旧版本 passwall2 的 .run 文件，只保留当前版本
-          find target-repo/extra-packages/ -type f -name "passwall2_*.run" ! -name "passwall2_x86_64_${{ env.LATEST_TAG }}.run" -delete
-
+          find target-repo/extra-packages/ -type f -name "luci-app-passwall2_*.run" ! -name "${{ env.RUN_FILE }}" -delete
           # 复制当前构建的 .run 文件
-          cp makeself/passwall2_x86_64_${{ env.LATEST_TAG }}.run target-repo/extra-packages/
+          cp makeself/${{ env.RUN_FILE }} target-repo/extra-packages/
 
           cd target-repo
           git checkout main
 
-          git add extra-packages/passwall2_*.run
+          git add extra-packages/${{ env.RUN_FILE }}
           git commit -m "🤖 自动同步 Passwall RunFile: $(date +%F_%T)"
           git push
