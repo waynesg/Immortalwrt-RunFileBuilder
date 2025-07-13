@@ -34,6 +34,9 @@ jobs:
           cd sdk
           ./scripts/feeds update -a
           ./scripts/feeds install -a
+          echo CONFIG_PACKAGE_rpcd=y >> .config
+          echo CONFIG_PACKAGE_attendedsysupgrade-common=y >> .config
+          echo CONFIG_PACKAGE_subconverter=y >> .config
 
       - name: Clone luci-app-subconverter and sub-web
         run: |
