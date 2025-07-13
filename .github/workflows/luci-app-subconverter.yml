@@ -29,6 +29,15 @@ jobs:
           curl -LO https://downloads.openwrt.org/releases/24.10.2/targets/x86/64/openwrt-sdk-24.10.2-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst
           tar --use-compress-program=unzstd -xf openwrt-sdk-24.10.2-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst --strip-components=1
 
+      - name: Prepare feeds
+        run: |
+          cd sdk
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+          ls feeds/luci/luci.mk  # 确认 luci.mk 是否存在
+
+      
+
       - name: Clone luci-app-subconverter and sub-web
         run: |
           git clone https://github.com/kiddin9/openwrt-subconverter.git temp-sub
