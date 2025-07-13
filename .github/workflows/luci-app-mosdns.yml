@@ -16,7 +16,7 @@ jobs:
       - name: Fetch latest release tag from mosdns
         id: fetch_latest_tag
         run: |
-          latest_tag=$(curl -sk https://api.github.com/repos/sbwml/luci-app-mosdns/releases | grep "tag_name" | grep v5 | head -n 1 | awk -F ":" '{print $2}' | sed 's/\"//g;s/,//;s/ //')
+          latest_tag=$(curl -sk https://api.github.com/repos/sbwml/luci-app-mosdns/releases | grep "tag_name" | grep v5 | head -n 1 | awk -F ':' '{print $2}' | sed 's/\"//g;s/,//;s/ //')
           echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
 
       - name: Set run filename
@@ -30,8 +30,8 @@ jobs:
       - name: Download latest mosdns files
         run: |
           echo "Downloading MosDNS IPK files..."
-
           curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases | jq -r '.[0].assets[].browser_download_url' > urls.txt
+
           mkdir -p mosdns_x86_64
 
           download_file() {
@@ -43,20 +43,12 @@ jobs:
             [ $? -ne 0 ] && echo "Error downloading $filename" && exit 1
           }
 
-          mosdns_x86_64=$(grep -Ei 'mosdns_5.*x86_64.*\.ipk$' urls.txt | head -n1)
-          v2dat_x86_64=$(grep -Ei 'v2dat_.*x86_64.*\.ipk$' urls.txt | head -n1)
-          luci_app=$(grep -Ei 'luci-app-mosdns_.*\.ipk$' urls.txt | head -n1)
-          luci_i18n=$(grep -Ei 'luci-i18n-mosdns-zh-cn_.*\.ipk$' urls.txt | head -n1)
-          geoip=$(grep -Ei 'v2ray-geoip.*\.gz$' urls.txt | head -n1)
-          geosite=$(grep -Ei 'v2ray-geosite.*\.gz$' urls.txt | head -n1)
-
-          echo "Resolved URLs:"
-          echo "$mosdns_x86_64"
-          echo "$v2dat_x86_64"
-          echo "$luci_app"
-          echo "$luci_i18n"
-          echo "$geoip"
-          echo "$geosite"
+          mosdns_x86_64=$(grep -Ei 'mosdns_5.*x86_64.*\.ipk$' urls.txt | head -1)
+          v2dat_x86_64=$(grep -Ei 'v2dat_.*x86_64.*\.ipk$' urls.txt | head -1)
+          luci_app=$(grep -Ei 'luci-app-mosdns_.*\.ipk$' urls.txt | head -1)
+          luci_i18n=$(grep -Ei 'luci-i18n-mosdns-zh-cn_.*\.ipk$' urls.txt | head -1)
+          geoip=$(grep -Ei 'v2ray-geoip.*\.gz$' urls.txt | head -1)
+          geosite=$(grep -Ei 'v2ray-geosite.*\.gz$' urls.txt | head -1)
 
           download_file "$mosdns_x86_64" "mosdns_x86_64"
           download_file "$v2dat_x86_64" "mosdns_x86_64"
