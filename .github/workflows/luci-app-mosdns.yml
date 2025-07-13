@@ -30,7 +30,7 @@ jobs:
       - name: Download latest mosdns files
         run: |
           echo "Downloading MosDNS IPK files..."
-          curl -sk --connect-timeout 10 "https://api.github.com/repos/sbwml/luci-app-mosdns/releases" | grep "browser_download_url" | grep "${{ env.LATEST_TAG }}" > releases.txt
+          curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases | jq -r '.[0].assets[].browser_download_url' > urls.txt
           mkdir -p mosdns_x86_64
 
           download_file() {
@@ -42,7 +42,7 @@ jobs:
             [ $? -ne 0 ] && echo "Error downloading $filename" && exit 1
           }
 
-          mosdns_x86_64=$(grep "browser_download_url" releases.txt | grep "mosdns_5" | grep "x86_64.ipk" | head -1 | awk -F '"' '{print $4}')
+          mosdns_x86_64=$(grep "mosdns_5" urls.txt | grep "x86_64.ipk" | head -1)
           v2dat_x86_64=$(grep "browser_download_url" releases.txt | grep "v2dat_" | grep "x86_64.ipk" | head -1 | awk -F '"' '{print $4}')
           luci_app=$(grep "browser_download_url" releases.txt | grep "luci-app-mosdns_" | head -1 | awk -F '"' '{print $4}')
           luci_i18n=$(grep "browser_download_url" releases.txt | grep "luci-i18n-mosdns-zh-cn" | head -1 | awk -F '"' '{print $4}')
