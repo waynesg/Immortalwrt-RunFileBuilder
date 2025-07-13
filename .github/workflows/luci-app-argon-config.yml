@@ -63,14 +63,23 @@ jobs:
           echo "=== Contents inside .run ==="
           ls -lh tmp
 
-      - name: Push to Immortalwrt-ImageBuilder
+      - name: Push .run to Immortalwrt-ImageBuilder
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          
+
+          # 克隆目标仓库
           git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
-          cp "$RUN_FILE" target-repo/extra-packages/
+
           cd target-repo
-          git add extra-packages/"$RUN_FILE"
-          git commit -m "🤖 自动同步: $RUN_FILE"
+
+          # 删除旧的 luci-app-argon-config_*.run 文件，保留当前构建的
+          find extra-packages/ -type f -name "luci-app-argon-config_*.run" ! -name "${{ env.RUN_FILE }}" -exec rm -f {} +
+
+          # 复制新的 .run 文件
+          cp ../${{ env.RUN_FILE }} extra-packages/
+
+          git checkout main
+          git add extra-packages/${{ env.RUN_FILE }}
+          git commit -m "🤖 自动同步: ${{ env.RUN_FILE }}"
           git push
