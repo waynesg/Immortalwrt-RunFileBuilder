@@ -1,0 +1,75 @@
+name: Build luci-app-wechatpush runfile
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set environment variables
+        run: |
+          echo "TAG=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
+          echo "TARGET=all" >> $GITHUB_ENV
+          echo "PKG_NAME=luci-app-wechatpush" >> $GITHUB_ENV
+
+      - name: Download .ipk files
+        run: |
+          mkdir build_dir
+          cd build_dir
+
+          BASE_URL="https://api.github.com/repos/tty228/luci-app-wechatpush/releases/latest"
+
+          APP_URL=$(curl -s $BASE_URL | jq -r '.assets[] | select(.name | test("luci-app-wechatpush_.*_all\\.ipk")) | .browser_download_url')
+          echo "APP_URL=$APP_URL"
+          curl -LO "$APP_URL"
+
+          I18N_URL=$(curl -s $BASE_URL | jq -r '.assets[] | select(.name | test("luci-i18n-wechatpush-zh-cn_.*\\.ipk")) | .browser_download_url')
+          echo "I18N_URL=$I18N_URL"
+          curl -LO "$I18N_URL"
+
+      - name: Create install.sh
+        run: |
+          cat <<EOF > build_dir/install.sh
+          #!/bin/sh
+          opkg update
+          opkg install *.ipk
+          EOF
+          chmod +x build_dir/install.sh
+
+      - name: Clone makeself
+        run: git clone https://github.com/megastep/makeself.git
+
+      - name: Set RUN_FILE name
+        run: |
+          NAME="${PKG_NAME}_${TAG}_${TARGET}.run"
+          echo "RUN_FILE=$NAME" >> $GITHUB_ENV
+        env:
+          TAG: ${{ env.TAG }}
+          TARGET: ${{ env.TARGET }}
+          PKG_NAME: ${{ env.PKG_NAME }}
+
+      - name: Build .run file
+        run: |
+          chmod +x makeself/makeself.sh
+          chmod +x build_dir/install.sh
+          makeself/makeself.sh build_dir "${{ env.RUN_FILE }}" "Auto install luci-app-wechatpush" ./install.sh
+
+      - name: Check .run file
+        run: ls -lh "${{ env.RUN_FILE }}"
+
+      - name: Push to Immortalwrt-ImageBuilder
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
+          cp "${{ env.RUN_FILE }}" target-repo/extra-packages/
+          cd target-repo
+          git add extra-packages/${{ env.RUN_FILE }}
+          git commit -m "🤖 自动同步: ${{ env.RUN_FILE }}"
+          git push
