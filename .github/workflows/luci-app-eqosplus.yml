@@ -13,11 +13,11 @@ jobs:
 
       - name: Set environment variables
         run: |
-          echo "TAG=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
+          TAG=$(date +%Y%m%d-%H%M)
+          echo "TAG=$TAG" >> $GITHUB_ENV
           echo "TARGET=all" >> $GITHUB_ENV
           echo "PKG_NAME=luci-app-eqosplus" >> $GITHUB_ENV
-          echo "RUN_FILE=luci-app-eqosplus_${TAG}_${TARGET}.run" >> $GITHUB_ENV
-          echo "REPO=sirpdboy/luci-app-eqosplus" >> $GITHUB_ENV
+          echo "RUN_FILE=luci-app-eqosplus_${TAG}_all.run" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
