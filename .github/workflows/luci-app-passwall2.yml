@@ -90,7 +90,7 @@ jobs:
 
       - name: Check file sizes
         run: |
-          ls -lh makeself/passwall2*.run
+          ls -lh makeself/${{ env.RUN_FILE }}
 
       - name: Preparing release name
         run: |
