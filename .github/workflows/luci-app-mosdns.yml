@@ -30,7 +30,7 @@ jobs:
       - name: Download latest mosdns files
         run: |
           echo "Downloading MosDNS IPK files..."
-          curl -sk --connect-timeout 10 "https://api.github.com/repos/sbwml/luci-app-mosdns/releases" | grep "browser_download_url" | grep "$LATEST_TAG" > releases.txt
+          curl -sk --connect-timeout 10 "https://api.github.com/repos/sbwml/luci-app-mosdns/releases" | grep "browser_download_url" | grep "${{ env.LATEST_TAG }}" > releases.txt
           mkdir -p mosdns_x86_64
 
           download_file() {
