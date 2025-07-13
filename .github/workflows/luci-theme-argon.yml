@@ -53,7 +53,7 @@ jobs:
       - name: Check result
         run: ls -lh *.run
 
-            - name: Push .run to Immortalwrt-ImageBuilder
+      - name: Push .run to Immortalwrt-ImageBuilder
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
