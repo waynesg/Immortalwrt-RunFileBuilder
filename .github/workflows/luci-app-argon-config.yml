@@ -72,18 +72,20 @@ jobs:
 
           cd target-repo
 
-          # 提取当前 .run 文件名（去除路径，只保留文件名）
           CURRENT_FILE_NAME=$(basename "${{ env.RUN_FILE }}")
-
           echo "当前构建文件名: $CURRENT_FILE_NAME"
 
-          # 删除旧的 luci-app-argon-config_*.run 文件（排除当前构建的）
+          # 删除旧文件（排除当前）
           find extra-packages/ -type f -name "luci-app-argon-config_*.run" ! -name "$CURRENT_FILE_NAME" -exec rm -f {} +
 
-          # 拷贝新 .run 文件
+          # 拷贝新构建的 .run 文件
           cp ../"${{ env.RUN_FILE }}" extra-packages/
 
           git checkout main
+
+          # 显式追踪删除 + 新增的文件
+          git add -u extra-packages/
           git add extra-packages/"$CURRENT_FILE_NAME"
+
           git commit -m "🤖 自动同步: $CURRENT_FILE_NAME"
           git push
