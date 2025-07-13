@@ -32,11 +32,22 @@ jobs:
       - name: Prepare feeds
         run: |
           cd sdk
+          # 添加 feeds.conf.default
+          cat <<EOF > feeds.conf.default
+          src-git packages https://github.com/openwrt/packages
+          src-git luci https://github.com/openwrt/luci
+          src-git routing https://github.com/openwrt-routing/packages
+          src-git telephony https://github.com/openwrt/telephony
+          EOF
+
           ./scripts/feeds update -a
           ./scripts/feeds install -a
-          ls feeds/luci/luci.mk  # 确认 luci.mk 是否存在
 
-      
+          # 确认 luci.mk 存在
+          if [ ! -f "feeds/luci/luci.mk" ]; then
+            echo "ERROR: feeds/luci/luci.mk 不存在，说明 luci feed 没有安装成功"
+            exit 1
+          fi
 
       - name: Clone luci-app-subconverter and sub-web
         run: |
