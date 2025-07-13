@@ -13,13 +13,9 @@ jobs:
 
       - name: Set environment variables
         run: |
-          echo "TAG=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
-          echo "TARGET=all" >> $GITHUB_ENV
-          echo "PKG_NAME=luci-app-eqosplus" >> $GITHUB_ENV
-          echo "REPO=sirpdboy/luci-app-eqosplus" >> $GITHUB_ENV
-          echo "RELEASE_TAG=v1.2.5" >> $GITHUB_ENV
-          echo "RUN_FILE=luci-app-eqosplus_${TAG}_${TARGET}.run" >> $GITHUB_ENV
-
+          echo "TAG=${TAG:-unknown}" >> $GITHUB_ENV
+          echo "TARGET=${TARGET:-all}" >> $GITHUB_ENV
+          
       - name: Download .ipk files
         run: |
           mkdir build_dir && cd build_dir
