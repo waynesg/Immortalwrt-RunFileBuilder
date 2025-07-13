@@ -46,13 +46,15 @@ jobs:
         run: |
           cd sdk
           make defconfig
-          make package/luci-app-subconverter/compile V=s
-          make package/sub-web/compile V=s
+          make tools/install -j$(nproc)
+          make toolchain/install -j$(nproc)
+          make package/luci-app-subconverter/compile -j$(nproc) V=s
 
       - name: Collect .ipk files
         run: |
           mkdir -p build_dir
           find sdk/bin/packages/ -name '*.ipk' -exec cp {} build_dir/ \;
+          cp -r sdk/package/sub-web/* build_dir/
 
       - name: Create install.sh
         run: |
