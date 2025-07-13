@@ -30,6 +30,7 @@ jobs:
       - name: Download latest mosdns files
         run: |
           echo "Downloading MosDNS IPK files..."
+
           curl -s https://api.github.com/repos/sbwml/luci-app-mosdns/releases | jq -r '.[0].assets[].browser_download_url' > urls.txt
           mkdir -p mosdns_x86_64
 
@@ -43,11 +44,19 @@ jobs:
           }
 
           mosdns_x86_64=$(grep "mosdns_5" urls.txt | grep "x86_64.ipk" | head -1)
-          v2dat_x86_64=$(grep "browser_download_url" releases.txt | grep "v2dat_" | grep "x86_64.ipk" | head -1 | awk -F '"' '{print $4}')
-          luci_app=$(grep "browser_download_url" releases.txt | grep "luci-app-mosdns_" | head -1 | awk -F '"' '{print $4}')
-          luci_i18n=$(grep "browser_download_url" releases.txt | grep "luci-i18n-mosdns-zh-cn" | head -1 | awk -F '"' '{print $4}')
-          geoip=$(grep "browser_download_url" releases.txt | grep "v2ray-geoip" | head -1 | awk -F '"' '{print $4}')
-          geosite=$(grep "browser_download_url" releases.txt | grep "v2ray-geosite" | head -1 | awk -F '"' '{print $4}')
+          v2dat_x86_64=$(grep "v2dat_" urls.txt | grep "x86_64.ipk" | head -1)
+          luci_app=$(grep "luci-app-mosdns_" urls.txt | head -1)
+          luci_i18n=$(grep "luci-i18n-mosdns-zh-cn" urls.txt | head -1)
+          geoip=$(grep "v2ray-geoip" urls.txt | head -1)
+          geosite=$(grep "v2ray-geosite" urls.txt | head -1)
+
+          echo "Resolved URLs:"
+          echo "$mosdns_x86_64"
+          echo "$v2dat_x86_64"
+          echo "$luci_app"
+          echo "$luci_i18n"
+          echo "$geoip"
+          echo "$geosite"
 
           download_file "$mosdns_x86_64" "mosdns_x86_64"
           download_file "$v2dat_x86_64" "mosdns_x86_64"
