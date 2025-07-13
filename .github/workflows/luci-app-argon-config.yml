@@ -68,18 +68,20 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # 克隆目标仓库
           git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
 
           cd target-repo
 
-          # 删除旧的 luci-app-argon-config_*.run 文件，保留当前构建的
-          find extra-packages/ -type f -name "luci-app-argon-config_*.run" ! -name "${{ env.RUN_FILE }}" -exec rm -f {} +
+          # 用 shell 变量接收 RUN_FILE 名
+          CURRENT_FILE="${{ env.RUN_FILE }}"
 
-          # 复制新的 .run 文件
-          cp ../${{ env.RUN_FILE }} extra-packages/
+          # 删除旧的 luci-app-argon-config_*.run 文件（保留当前构建的）
+          find extra-packages/ -type f -name "luci-app-argon-config_*.run" ! -name "$CURRENT_FILE" -exec rm -f {} +
+
+          # 拷贝新文件
+          cp ../"$CURRENT_FILE" extra-packages/
 
           git checkout main
-          git add extra-packages/${{ env.RUN_FILE }}
-          git commit -m "🤖 自动同步: ${{ env.RUN_FILE }}"
+          git add extra-packages/"$CURRENT_FILE"
+          git commit -m "🤖 自动同步: $CURRENT_FILE"
           git push
