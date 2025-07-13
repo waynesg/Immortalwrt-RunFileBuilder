@@ -1,4 +1,4 @@
-name: Build luci-app-onliner runfile
+  name: Build luci-app-onliner runfile
 
 on:
   workflow_dispatch:
@@ -16,7 +16,15 @@ jobs:
           echo "TAG=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
           echo "TARGET=x86_64" >> $GITHUB_ENV
           echo "PKG_NAME=luci-app-onliner" >> $GITHUB_ENV
-          echo "RUN_FILE=luci-app-onliner_${TAG}_${TARGET}.run" >> $GITHUB_ENV
+
+      - name: Set RUN_FILE name
+        run: |
+          echo "RUN_FILE=${PKG_NAME}_${TAG}_${TARGET}.run" >> $GITHUB_ENV
+        env:
+          TAG: ${{ env.TAG }}
+          TARGET: ${{ env.TARGET }}
+          PKG_NAME: ${{ env.PKG_NAME }}
+
 
       - name: Install dependencies
         run: |
