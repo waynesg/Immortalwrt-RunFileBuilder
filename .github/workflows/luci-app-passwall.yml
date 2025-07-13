@@ -44,13 +44,6 @@ jobs:
           rm downloads/passwall_packages_ipk_x86_64.zip
           cp downloads/luci-19.07*.ipk passwall_x86_64/main/
 
-      - name: Organize files for aarch64_cortex-a53
-        run: |
-          mkdir -p passwall_aarch64/depends passwall_aarch64/main
-          unzip downloads/passwall_packages_ipk_aarch64_cortex-a53.zip -d passwall_aarch64/depends
-          rm downloads/passwall_packages_ipk_aarch64_cortex-a53.zip
-          cp downloads/luci-19.07*.ipk passwall_aarch64/main/
-
       - name: Create install.sh scripts
         run: |
           cat <<EOF > passwall_x86_64/install.sh
@@ -68,18 +61,15 @@ jobs:
           opkg install main/*.ipk
           EOF
           chmod +x passwall_x86_64/install.sh
-          cp passwall_x86_64/install.sh passwall_aarch64/install.sh
 
       - name: Move passwall directories to makeself
         run: |
           mv passwall_x86_64 makeself/
-          mv passwall_aarch64 makeself/
 
       - name: Create self-extracting packages
         run: |
           cd makeself
-          ./makeself.sh passwall_x86_64/ passwall_x86_64_${{ env.LATEST_TAG }}.run "by github action" ./install.sh
-          ./makeself.sh passwall_aarch64/ passwall_aarch64_a53_${{ env.LATEST_TAG }}.run "by github action" ./install.sh
+          ./makeself.sh passwall_x86_64/ luci-app-passwall_x86_64_${{ env.LATEST_TAG }}.run "by github action" ./install.sh
 
       - name: Check file sizes
         run: |
@@ -89,30 +79,6 @@ jobs:
         run: |
           release_name=$(TZ="Asia/Shanghai" date +'%Y-%m-%d %H:%M Build')
           echo "RELEASE_NAME=$release_name" >> $GITHUB_ENV
-
-      - name: Fetch latest release details
-        id: fetch_release_details
-        run: |
-          extra_content="![Github](https://img.shields.io/badge/Passwall.run-123456?logo=github&logoColor=fff&labelColor=green&style=for-the-badge) [![Github](https://img.shields.io/badge/国内加速站下载-FC7C0D?logo=github&logoColor=fff&labelColor=000&style=for-the-badge)](https://wkdaily.cpolar.cn/archives/1) ![GitHub Downloads (all assets, specific tag)](https://img.shields.io/github/downloads/wukongdaily/RunFilesBuilder/${{ env.LATEST_TAG }}/total?style=for-the-badge&labelColor=black&color=%2325c2a0)"
-          release_notes=$(curl -s https://api.github.com/repos/xiaorouji/openwrt-passwall/releases/latest | jq -r '.body')
-          if [ -z "$release_notes" ]; then
-            release_notes="No release notes available."
-          fi
-          echo -e "$extra_content\n\n$release_notes" > release_notes.md
-
-      - name: Print release notes
-        run: |
-          cat release_notes.md
-
-      - name: Generate new tag & release
-        uses: softprops/action-gh-release@master
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.LATEST_TAG }}
-          target_commitish: ${{ github.ref_name }}
-          prerelease: false
-          body_path: release_notes.md
 
       - name: Upload run files as release assets
         uses: softprops/action-gh-release@v2.1.0
@@ -130,13 +96,17 @@ jobs:
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
+          
           cd target-repo
           git checkout main
+          
+          # 删除旧的 luci-app-passwall_x86_64_*.run，保留当前的
+          find extra-packages/ -type f -name "luci-app-passwall_x86_64_*.run" ! -name "luci-app-passwall_x86_64_${{ env.LATEST_TAG }}.run" -delete
+          find extra-packages/ -type f -name "luci-app-passwall_aarch64_a53_*.run" ! -name "luci-app-passwall_aarch64_a53_${{ env.LATEST_TAG }}.run" -delete
+          
+          # 拷贝新的文件
+          cp ../makeself/luci-app-passwall_*.run extra-packages/
 
-          find extra-packages/ -type f -name "passwall_x86_64_*.run" ! -name "passwall_x86_64_${{ env.LATEST_TAG }}.run" -exec git rm -f {} +
-
-          cp ../makeself/passwall_x86_64_${{ env.LATEST_TAG }}.run extra-packages/
-
-          git add extra-packages/passwall_*.run
-          git commit -m "🤖 自动同步 Passwall RunFile: $(date +%F_%T)"
+          git add extra-packages/luci-app-passwall_*.run
+          git commit -m "🤖 自动同步 luci-app-passwall: ${{ env.LATEST_TAG }}"
           git push
