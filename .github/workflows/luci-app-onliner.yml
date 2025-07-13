@@ -1,0 +1,81 @@
+name: Build luci-app-onliner runfile
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set environment variables
+        run: |
+          echo "TAG=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
+          echo "TARGET=x86_64" >> $GITHUB_ENV
+          echo "PKG_NAME=luci-app-onliner" >> $GITHUB_ENV
+          echo "RUN_FILE=luci-app-onliner_${TAG}_${TARGET}.run" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential libncurses5-dev libssl-dev unzip curl jq git zstd
+
+      - name: Download and extract OpenWrt SDK
+        run: |
+          mkdir -p sdk && cd sdk
+          curl -LO https://downloads.openwrt.org/releases/24.10.2/targets/x86/64/openwrt-sdk-24.10.2-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst
+          tar --use-compress-program=unzstd -xf openwrt-sdk-24.10.2-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst --strip-components=1
+
+      - name: Clone luci-app-onliner into SDK
+        run: |
+          git clone --depth=1 https://github.com/Hyy2001X/AutoBuild-Packages.git temp
+          mv temp/luci-app-onliner sdk/package/luci-app-onliner
+
+      - name: Update & install feeds
+        run: |
+          cd sdk
+          ./scripts/feeds update -a
+          ./scripts/feeds install -a
+
+      - name: Build luci-app-onliner
+        run: |
+          cd sdk
+          make defconfig
+          make package/luci-app-onliner/compile V=s
+
+      - name: Collect .ipk files
+        run: |
+          mkdir -p build_dir
+          find sdk/bin/packages -name "*.ipk" -exec cp {} build_dir/ \;
+
+      - name: Create install.sh
+        run: |
+          cat <<EOF > build_dir/install.sh
+          #!/bin/sh
+          opkg update
+          opkg install *.ipk
+          EOF
+          chmod +x build_dir/install.sh
+
+      - name: Clone makeself
+        run: git clone https://github.com/megastep/makeself.git
+
+      - name: Build .run file
+        run: |
+          chmod +x makeself/makeself.sh
+          makeself/makeself.sh build_dir ${{ env.RUN_FILE }} "Auto install luci-app-onliner" ./install.sh
+
+      - name: Push to Immortalwrt-ImageBuilder
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          
+          git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
+          cp ${{ env.RUN_FILE }} target-repo/extra-packages/
+          cd target-repo
+          git add extra-packages/${{ env.RUN_FILE }}
+          git commit -m "🤖 自动同步: ${{ env.RUN_FILE }}"
+          git push
