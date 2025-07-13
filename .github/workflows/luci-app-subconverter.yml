@@ -34,9 +34,7 @@ jobs:
           cd sdk
           ./scripts/feeds update -a
           ./scripts/feeds install -a
-          echo CONFIG_PACKAGE_rpcd=y >> .config
-          echo CONFIG_PACKAGE_attendedsysupgrade-common=y >> .config
-          echo CONFIG_PACKAGE_subconverter=y >> .config
+          make defconfig
 
       - name: Clone luci-app-subconverter and sub-web
         run: |
@@ -48,10 +46,10 @@ jobs:
       - name: Build subconverter packages
         run: |
           cd sdk
-          make defconfig
-          make tools/install -j$(nproc)
-          make toolchain/install -j$(nproc)
+          make tools/install -j$(nproc) V=s
+          make toolchain/install -j$(nproc) V=s
           make package/luci-app-subconverter/compile -j$(nproc) V=s
+          make package/sub-web/compile -j$(nproc) V=s
 
       - name: Collect .ipk files
         run: |
