@@ -17,8 +17,12 @@ jobs:
           echo "TARGET=all" >> $GITHUB_ENV
           echo "PKG_NAME=luci-app-eqosplus" >> $GITHUB_ENV
           echo "REPO=sirpdboy/luci-app-eqosplus" >> $GITHUB_ENV
-          echo "RELEASE_TAG_RAW=luci-app-eqosplus v1.2.5" >> $GITHUB_ENV
-          echo "RELEASE_TAG_ENC=luci-app-eqosplus%20v1.2.5" >> $GITHUB_ENV
+
+          RELEASE_TAG_RAW="luci-app-eqosplus v1.2.5"
+          RELEASE_TAG_ENC=$(python3 -c "import urllib.parse; print(urllib.parse.quote('''$RELEASE_TAG_RAW'''))")
+    
+          echo "RELEASE_TAG_RAW=$RELEASE_TAG_RAW" >> $GITHUB_ENV
+          echo "RELEASE_TAG_ENC=$RELEASE_TAG_ENC" >> $GITHUB_ENV
           echo "RUN_FILE=luci-app-eqosplus_${TAG}_${TARGET}.run" >> $GITHUB_ENV
 
       - name: Download .ipk files
