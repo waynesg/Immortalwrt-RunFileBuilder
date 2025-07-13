@@ -59,6 +59,7 @@ jobs:
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
+          find target-repo/extra-packages/ -type f -name "luci-theme-argon_*.run" ! -name "${{ env.RUN_FILE }}" -delete
           cp ${{ env.RUN_FILE }} target-repo/extra-packages/
           cd target-repo
           git add extra-packages/${{ env.RUN_FILE }}
