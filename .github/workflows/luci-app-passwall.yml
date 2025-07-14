@@ -25,6 +25,10 @@ jobs:
           latest_tag=$(curl -s https://api.github.com/repos/xiaorouji/openwrt-passwall/releases/latest | jq -r '.tag_name')
           echo "LATEST_TAG=$latest_tag" >> $GITHUB_ENV
 
+      - name: Set run file name
+        run: |
+          echo "RUN_FILE=luci-app-passwall_x86_64_${{ env.LATEST_TAG }}.run" >> $GITHUB_ENV
+
       - name: Clone makeself repository
         run: git clone https://github.com/megastep/makeself.git
 
@@ -69,8 +73,8 @@ jobs:
       - name: Create self-extracting packages
         run: |
           cd makeself
-          ./makeself.sh passwall_x86_64/ luci-app-passwall_x86_64_${{ env.LATEST_TAG }}.run "by github action" ./install.sh
-
+          ./makeself.sh passwall_x86_64/ "${{ env.RUN_FILE }}" "by github action" ./install.sh
+          
       - name: Check file sizes
         run: |
           ls -lh makeself/luci-app-passwall_x86_64_${{ env.LATEST_TAG }}.run
@@ -91,12 +95,11 @@ jobs:
           git checkout main
           
           # 删除旧的 luci-app-passwall_x86_64_*.run，保留当前的
-          find extra-packages/ -type f -name "luci-app-passwall_x86_64_*.run" ! -name "luci-app-passwall_x86_64_${{ env.LATEST_TAG }}.run" -delete
-          find extra-packages/ -type f -name "luci-app-passwall_aarch64_a53_*.run" ! -name "luci-app-passwall_aarch64_a53_${{ env.LATEST_TAG }}.run" -delete
+          find extra-packages/ -type f -name "luci-app-passwall_x86_64_*.run" ! -name "${{ env.RUN_FILE }}" -delete
           
           # 拷贝新的文件
-          cp ../makeself/luci-app-passwall_*.run extra-packages/
+          cp ../makeself/"${{ env.RUN_FILE }}" extra-packages/
 
-          git add extra-packages/luci-app-passwall_*.run
+          git add extra-packages/"${{ env.RUN_FILE }}"
           git commit -m "🤖 自动同步 luci-app-passwall: ${{ env.LATEST_TAG }}"
           git push
