@@ -1,4 +1,4 @@
-name: Build subconverter runfile
+name: Build luci-app-subconverter runfile
 
 on:
   workflow_dispatch:
@@ -11,75 +11,32 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set environment variables
+      - name: Set env vars
         run: |
           echo "TAG=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
-          echo "TARGET=x86_64" >> $GITHUB_ENV
-          echo "PKG_NAME=subconverter" >> $GITHUB_ENV
-          echo "RUN_FILE=luci-app-subconverter_${TAG}_${TARGET}.run" >> $GITHUB_ENV
+          echo "PKG_NAME=luci-app-subconverter" >> $GITHUB_ENV
+          echo "TARGET=amd64" >> $GITHUB_ENV
+          echo "RUN_FILE=luci-app-subconverter_${TAG}_amd64.run" >> $GITHUB_ENV
 
-      - name: Install dependencies
+      - name: Download .ipk and subconverter binary
         run: |
-          sudo apt update
-          sudo apt install -y build-essential libncurses5-dev libssl-dev unzip curl jq git zstd
+          mkdir -p build_dir/usr/bin
+          cd build_dir
 
-      - name: Download and extract OpenWrt SDK
-        run: |
-          mkdir -p sdk && cd sdk
-          curl -LO https://downloads.openwrt.org/releases/24.10.2/targets/x86/64/openwrt-sdk-24.10.2-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst
-          tar --use-compress-program=unzstd -xf openwrt-sdk-24.10.2-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst --strip-components=1
+          echo "📦 下载 luci-app-subconverter.ipk"
+          curl -LO https://github.com/0x2196f3/luci-app-subconverter/releases/download/v1.3/luci-app-subconverter_1.3-1_amd64.ipk
 
-      - name: Prepare feeds
-        run: |
-          cd sdk
-          # 添加 feeds.conf.default
-          cat <<EOF > feeds.conf.default
-          src-git packages https://github.com/openwrt/packages
-          src-git luci https://github.com/openwrt/luci
-          src-git routing https://github.com/openwrt-routing/packages
-          src-git telephony https://github.com/openwrt/telephony
-          EOF
-
-          ./scripts/feeds update -a
-          ./scripts/feeds install -a
-
-          # 确认 luci.mk 存在
-          if [ ! -f "feeds/luci/luci.mk" ]; then
-            echo "ERROR: feeds/luci/luci.mk 不存在，说明 luci feed 没有安装成功"
-            exit 1
-          fi
-
-      - name: Clone luci-app-subconverter and sub-web
-        run: |
-          git clone https://github.com/kiddin9/openwrt-subconverter.git temp-sub
-          cp -r temp-sub/luci-app-subconverter sdk/package/
-          cp -r temp-sub/sub-web sdk/package/
-          rm -rf temp-sub
-
-      - name: Configure build
-        run: |
-          cd sdk
-          echo "CONFIG_PACKAGE_luci-app-subconverter=y" >> .config
-          echo "CONFIG_PACKAGE_sub-web=y" >> .config
-          make defconfig
-          
-      - name: Build packages
-        run: |
-          cd sdk
-          make package/luci-app-subconverter/compile -j$(nproc) V=s
-          make package/sub-web/compile -j$(nproc) V=s
-
-      - name: Collect .ipk files
-        run: |
-          mkdir -p build_dir
-          find sdk/bin/packages/ -name '*.ipk' -exec cp {} build_dir/ \;
+          echo "⚙️ 下载 subconverter 可执行文件"
+          curl -Lo usr/bin/subconverter https://github.com/0x2196f3/luci-app-subconverter/raw/main/bin/subconverter_amd64
+          chmod +x usr/bin/subconverter
 
       - name: Create install.sh
         run: |
           cat <<EOF > build_dir/install.sh
           #!/bin/sh
           opkg update
-          opkg install *.ipk
+          opkg install luci-app-subconverter_1.3-1_amd64.ipk
+          install -m 755 usr/bin/subconverter /usr/bin/subconverter
           EOF
           chmod +x build_dir/install.sh
 
@@ -91,26 +48,34 @@ jobs:
           chmod +x makeself/makeself.sh
           makeself/makeself.sh build_dir "${{ env.RUN_FILE }}" "Auto install luci-app-subconverter" ./install.sh
 
-      - name: Upload .run to Immortalwrt-ImageBuilder
+      - name: Check .run file
+        run: ls -lh "${{ env.RUN_FILE }}"
+
+      - name: Push to Immortalwrt-ImageBuilder
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
+          
           git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
-
-          # 删除旧的 subconverter run 文件（除了本次构建的）
-          find target-repo/extra-packages/ -type f -name "luci-app-subconverter_*.run" ! -name "${{ env.RUN_FILE }}" -delete
-
-          # 拷贝新构建文件
-          cp "${{ env.RUN_FILE }}" target-repo/extra-packages/
-
           cd target-repo
           git checkout main
-          git add -u extra-packages/
+          cd extra-packages
+
+          # 删除旧的 subconverter run 文件（保留最新）
+          for file in luci-app-subconverter_*.run; do
+            if [ "$file" != "${{ env.RUN_FILE }}" ]; then
+              echo "删除旧文件: $file"
+              git rm -f "$file"
+            fi
+          done
+
+          cd ../..
+          cp "${{ env.RUN_FILE }}" target-repo/extra-packages/
+          cd target-repo
           git add extra-packages/"${{ env.RUN_FILE }}"
           git commit -m "🤖 自动同步: ${{ env.RUN_FILE }}"
           git push
-
+          
       - name: Cleanup old workflow runs (keep latest 3)
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
         env:
