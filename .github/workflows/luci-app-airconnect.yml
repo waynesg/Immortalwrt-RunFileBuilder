@@ -84,7 +84,7 @@ jobs:
       - name: Cleanup old workflow runs (keep latest 3)
         if: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.REPO_TOKEN }}
           KEEP: 3
         run: |
           gh auth login --with-token <<< "$GH_TOKEN"
