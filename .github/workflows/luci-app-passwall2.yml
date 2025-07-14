@@ -1,4 +1,4 @@
-name: NEW Make Passwall2 run files
+name: Build luci-app-Passwall2
 
 on:
   workflow_dispatch:
