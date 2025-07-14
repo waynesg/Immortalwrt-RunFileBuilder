@@ -80,7 +80,7 @@ jobs:
           git commit -m "🤖 自动同步: luci-app-eqosplus .run"
           git push
 
-            - name: Cleanup old workflow runs (keep latest 3)
+      - name: Cleanup old workflow runs (keep latest 3)
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
         env:
           GH_TOKEN: ${{ secrets.REPO_TOKEN }}
