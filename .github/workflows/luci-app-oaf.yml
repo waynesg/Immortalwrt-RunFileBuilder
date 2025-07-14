@@ -11,17 +11,16 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set environment variables
+      - name: Set environment variables and fetch version
         run: |
-          TAG=$(date +%Y%m%d-%H%M)
           TARGET=all
           PKG_NAME=luci-app-oaf
-          RUN_FILE="${PKG_NAME}_${TAG}_${TARGET}.run"
-
-          echo "TAG=$TAG" >> $GITHUB_ENV
           echo "TARGET=$TARGET" >> $GITHUB_ENV
           echo "PKG_NAME=$PKG_NAME" >> $GITHUB_ENV
-          echo "RUN_FILE=$RUN_FILE" >> $GITHUB_ENV
+
+          VERSION=$(curl -s https://api.github.com/repos/destan19/OpenAppFilter/releases/latest | jq -r .tag_name)
+          echo "TAG=$VERSION" >> $GITHUB_ENV
+          echo "RUN_FILE=${PKG_NAME}_${VERSION}_${TARGET}.run" >> $GITHUB_ENV
 
       - name: Download .ipk and .tar.gz files
         run: |
@@ -73,8 +72,20 @@ jobs:
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
-          cp "${{ env.RUN_FILE }}" target-repo/extra-packages/
+
           cd target-repo
-          git add extra-packages/"${{ env.RUN_FILE }}"
-          git commit -m "🤖 自动同步: ${{ env.RUN_FILE }}"
+
+          CURRENT_FILE_NAME=$(basename "${{ env.RUN_FILE }}")
+          echo "当前构建文件: $CURRENT_FILE_NAME"
+
+          # 删除旧版本
+          find extra-packages/ -type f -name "luci-app-oaf_*.run" ! -name "$CURRENT_FILE_NAME" -exec rm -f {} +
+
+          # 拷贝新文件
+          cp ../"${{ env.RUN_FILE }}" extra-packages/
+
+          git checkout main
+          git add -u extra-packages/
+          git add extra-packages/"$CURRENT_FILE_NAME"
+          git commit -m "🤖 自动同步: $CURRENT_FILE_NAME"
           git push
