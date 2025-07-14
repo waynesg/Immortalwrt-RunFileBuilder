@@ -83,6 +83,10 @@ jobs:
           cd target-repo
           git checkout main
 
+          git add extra-packages/"${{ env.RUN_FILE }}"
+          git commit -m "🤖 自动同步 Passwall2 RunFile: ${{ env.LATEST_TAG }}"
+          git push
+
       - name: Cleanup old workflow runs (keep latest 3)
         if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
         env:
@@ -107,7 +111,3 @@ jobs:
             echo "🗑️ Deleting workflow run $run_id"
             gh api -X DELETE repos/${{ github.repository }}/actions/runs/$run_id
           done
-
-          git add extra-packages/"${{ env.RUN_FILE }}"
-          git commit -m "🤖 自动同步 Passwall2 RunFile: ${{ env.LATEST_TAG }}"
-          git push
