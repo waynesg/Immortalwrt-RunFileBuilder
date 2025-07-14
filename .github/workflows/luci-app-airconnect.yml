@@ -1,7 +1,9 @@
-name: Build luci-app-airconnect runfile
+name: Build luci-app-airconnect
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
   build:
