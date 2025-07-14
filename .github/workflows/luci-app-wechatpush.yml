@@ -1,7 +1,9 @@
-name: Build luci-app-wechatpush runfile
+name: Build luci-app-wechatpush
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
   build:
