@@ -1,4 +1,4 @@
-name: Build luci-app-tailscale runfile
+name: Build luci-app-tailscale
 
 on:
   workflow_dispatch:
