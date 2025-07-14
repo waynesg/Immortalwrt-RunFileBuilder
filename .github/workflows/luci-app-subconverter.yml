@@ -26,15 +26,20 @@ jobs:
 
           BASE_URL="https://api.github.com/repos/0x2196f3/luci-app-subconverter/releases/latest"
           
-          # 下载 luci-app-subconverter .ipk
           IPK_URL=$(curl -s $BASE_URL | jq -r '.assets[] | select(.name | test("^luci-app-subconverter_.*\\.ipk$")) | .browser_download_url')
+          if [ -z "$IPK_URL" ]; then
+            echo "❌ 未找到 luci-app-subconverter 的 .ipk 下载链接"
+            exit 1
+          fi
+          echo "✅ 下载 .ipk: $IPK_URL"
           curl -LO "$IPK_URL"
 
-          # 下载 subconverter 可执行文件
+          # 固定地址下载 subconverter_amd64 可执行文件
           BIN_URL="https://raw.githubusercontent.com/0x2196f3/luci-app-subconverter/main/bin/subconverter_amd64"
+          echo "✅ 下载 subconverter_amd64: $BIN_URL"
           curl -LO "$BIN_URL"
           chmod +x subconverter_amd64
-
+          
       - name: Extract version from .ipk filename
         run: |
           cd build_dir
