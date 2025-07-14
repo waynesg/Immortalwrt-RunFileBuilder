@@ -62,12 +62,6 @@ jobs:
           echo "CONFIG_PACKAGE_luci-app-subconverter=y" >> .config
           echo "CONFIG_PACKAGE_sub-web=y" >> .config
           make defconfig
-
-      - name: Prepare toolchain
-        run: |
-          cd sdk
-          make tools/install -j$(nproc) V=s
-          make toolchain/install -j$(nproc) V=s
           
       - name: Build packages
         run: |
