@@ -80,3 +80,28 @@ jobs:
           git add extra-packages/"$CURRENT_FILE"
           git commit -m "🤖 自动同步: $CURRENT_FILE"
           git push
+
+      - name: Cleanup old workflow runs (keep latest 3)
+        if: ${{ github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          KEEP: 3
+        run: |
+          gh auth login --with-token <<< "$GH_TOKEN"
+          
+          echo "Fetching workflow ID for current workflow..."
+          WORKFLOW_ID=$(gh api repos/${{ github.repository }}/actions/workflows \
+            | jq -r --arg name "${{ github.workflow }}" '.workflows[] | select(.name == $name) | .id')
+          
+          if [ -z "$WORKFLOW_ID" ]; then
+            echo "❌ Failed to get workflow ID for '${{ github.workflow }}'"
+            exit 0
+          fi
+
+          echo "✅ Found workflow ID: $WORKFLOW_ID"
+
+          gh api repos/${{ github.repository }}/actions/workflows/$WORKFLOW_ID/runs \
+            --paginate -q '.workflow_runs | .[] | .id' | tail -n +$(($KEEP + 1)) | while read run_id; do
+            echo "🗑️ Deleting workflow run $run_id"
+            gh api -X DELETE repos/${{ github.repository }}/actions/runs/$run_id
+          done
