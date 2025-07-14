@@ -11,11 +11,14 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Set environment variables
+      - name: Set environment variables (include version)
         run: |
-          echo "TAG=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
-          echo "TARGET=x86_64" >> $GITHUB_ENV
+          TARGET=x86_64
+          VERSION=$(curl -s https://api.github.com/repos/sbwml/luci-app-airconnect/releases/latest | jq -r '.body' | head -n1 | sed 's/\r//')
+          echo "TARGET=$TARGET" >> $GITHUB_ENV
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "PKG_NAME=luci-app-airconnect" >> $GITHUB_ENV
+          echo "RUN_FILE=luci-app-airconnect_${TARGET}_${VERSION}.run" >> $GITHUB_ENV
 
       - name: Download .ipk files
         run: |
@@ -48,14 +51,6 @@ jobs:
       - name: Clone makeself
         run: git clone https://github.com/megastep/makeself.git
 
-      - name: Set RUN_FILE name
-        run: |
-          NAME="luci-app-airconnect_${TAG}_${TARGET}.run"
-          echo "RUN_FILE=$NAME" >> $GITHUB_ENV
-        env:
-          TAG: ${{ env.TAG }}
-          TARGET: ${{ env.TARGET }}
-
       - name: Build .run file
         run: |
           chmod +x makeself/makeself.sh
@@ -71,8 +66,17 @@ jobs:
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
-          cp "${{ env.RUN_FILE }}" target-repo/extra-packages/
           cd target-repo
-          git add extra-packages/${{ env.RUN_FILE }}
-          git commit -m "🤖 自动同步: ${{ env.RUN_FILE }}"
+
+          CURRENT_FILE="${{ env.RUN_FILE }}"
+
+          # 删除旧版本的 luci-app-airconnect_*.run，只保留当前
+          find extra-packages/ -type f -name "luci-app-airconnect_*.run" ! -name "$CURRENT_FILE" -exec rm -f {} +
+
+          cp ../${{ env.RUN_FILE }} extra-packages/
+
+          git checkout main
+          git add -u extra-packages/
+          git add extra-packages/"$CURRENT_FILE"
+          git commit -m "🤖 自动同步: $CURRENT_FILE"
           git push
