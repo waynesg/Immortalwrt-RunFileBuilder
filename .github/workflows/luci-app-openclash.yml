@@ -31,7 +31,6 @@ jobs:
       - name: Copy latest openclash IPK to openclash directory
         run: |
           cp OpenClash/master/*.ipk openclash-x86
-         # cp OpenClash/master/*.ipk openclash-a53
 
       - name: Get version info
         id: extract_version
@@ -64,7 +63,6 @@ jobs:
           mv openclash-x86/clash openclash-x86/clash_meta
           #mv openclash-a53/clash openclash-a53/clash_meta
           ls openclash-x86
-          #ls openclash-a53
 
       - name: Create install.sh script save to openclash directory
         run: |
@@ -86,8 +84,6 @@ jobs:
           fi
           EOF
           chmod +x openclash-x86/install.sh
-          #cp openclash-x86/install.sh openclash-a53/install.sh
-          #chmod +x openclash-a53/install.sh
 
       - name: Clone makeself repository for self-extracting installer
         run: | 
@@ -97,7 +93,6 @@ jobs:
       - name: move openclash directory to makeself & create run
         run: |
           mv openclash-x86 makeself/
-          #mv openclash-a53 makeself/
           cd makeself
           ./makeself.sh openclash-x86/ ${{ env.RUN_FILE }} "by github action" ./install.sh
           #./makeself.sh openclash-a53/ openclash-aarch64_cortex-a53-${{ env.version }}.run "by github action" ./install.sh
