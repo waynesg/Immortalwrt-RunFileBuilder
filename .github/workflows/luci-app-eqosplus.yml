@@ -18,8 +18,9 @@ jobs:
 
       - name: Set environment variables
         run: |
-          TIMESTAMP=$(date +%Y%m%d-%H%M)
-          echo "TAG=${TIMESTAMP}" >> $GITHUB_ENV
+          echo "TAG=${RELEASE_TAG}" >> $GITHUB_ENV
+          echo "PKG_NAME=luci-app-eqosplus" >> $GITHUB_ENV
+          echo "RUN_FILE=luci-app-eqosplus_${RELEASE_TAG}_${TARGET}.run" >> $GITHUB_ENV
 
       - name: Download .ipk files
         run: |
@@ -50,12 +51,9 @@ jobs:
 
       - name: Build .run file
         run: |
-          PKG_NAME=luci-app-eqosplus
-          RUN_FILE=${PKG_NAME}_${TAG}_${TARGET}.run
-          echo "RUN_FILE=${RUN_FILE}" >> $GITHUB_ENV
           chmod +x makeself/makeself.sh
           chmod +x build_dir/install.sh
-          ./makeself/makeself.sh build_dir "${RUN_FILE}" "Auto install ${PKG_NAME}" ./install.sh
+          makeself/makeself.sh build_dir "${{ env.RUN_FILE }}" "Auto install luci-app-eqosplus" ./install.sh
 
       - name: Check .run file
         run: ls -lh *.run
@@ -66,8 +64,18 @@ jobs:
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
           
           git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
-          cp *.run target-repo/extra-packages/
-          cd target-repo
-          git add extra-packages/*.run
+                    cd target-repo
+
+          CURRENT_FILE_NAME=$(basename "${{ env.RUN_FILE }}")
+          echo "当前构建文件: $CURRENT_FILE_NAME"
+
+          # 删除旧的 eqosplus 版本
+          find extra-packages/ -type f -name "luci-app-eqosplus_*.run" ! -name "$CURRENT_FILE_NAME" -exec rm -f {} +
+
+          # 拷贝新的
+          cp ../${{ env.RUN_FILE }} extra-packages/
+
+          git add -u extra-packages/
+          git add extra-packages/"$CURRENT_FILE_NAME"
           git commit -m "🤖 自动同步: luci-app-eqosplus .run"
           git push
