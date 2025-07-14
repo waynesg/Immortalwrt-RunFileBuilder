@@ -14,9 +14,14 @@ jobs:
       - name: Set environment variables
         run: |
           echo "PKG_NAME=luci-theme-argon" >> $GITHUB_ENV
-          echo "TAG=$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
           echo "TARGET=all" >> $GITHUB_ENV
-          echo "RUN_FILE=luci-theme-argon_$(date +%Y%m%d-%H%M)_all.run" >> $GITHUB_ENV
+
+      - name: Get latest release tag
+        id: get_version
+        run: |
+          VERSION=$(curl -s https://api.github.com/repos/jerrykuku/luci-theme-argon/releases/latest | jq -r '.tag_name')
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "RUN_FILE=luci-theme-argon_${VERSION}_all.run" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
@@ -27,20 +32,26 @@ jobs:
         run: |
           mkdir -p appdir
           cd appdir
-          curl -LO https://github.com/jerrykuku/luci-theme-argon/releases/download/v2.3.2/luci-theme-argon_2.3.2-r20250207_all.ipk
+
+          API="https://api.github.com/repos/jerrykuku/luci-theme-argon/releases/latest"
+          URL=$(curl -s $API | jq -r '.assets[] | select(.name | test("luci-theme-argon_.*\\.ipk")) | .browser_download_url')
+          echo "Download URL: $URL"
+          curl -LO "$URL"
 
       - name: Add install.sh script
         run: |
-          cat <<EOF > appdir/install.sh
+          cd appdir
+          IPK_FILE=$(ls luci-theme-argon_*.ipk)
+          cat <<EOF > install.sh
           #!/bin/sh
           opkg update
           if [ \$? -ne 0 ]; then
               echo "opkg update failed."
               exit 1
           fi
-          opkg install luci-theme-argon_2.3.2-r20250207_all.ipk
+          opkg install \$IPK_FILE
           EOF
-          chmod +x appdir/install.sh
+          chmod +x install.sh
 
       - name: Clone makeself
         run: git clone https://github.com/megastep/makeself.git
@@ -48,7 +59,7 @@ jobs:
       - name: Create .run package
         run: |
           chmod +x makeself/makeself.sh
-          makeself/makeself.sh appdir ${{ env.RUN_FILE }} "Install luci-theme-argon" ./install.sh
+          makeself/makeself.sh appdir "${{ env.RUN_FILE }}" "Install luci-theme-argon" ./install.sh
 
       - name: Check result
         run: ls -lh *.run
@@ -58,27 +69,17 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          # 克隆目标仓库
           git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
 
           cd target-repo
           git checkout main
-          cd extra-packages
 
-          # 删除旧文件（除了当前的 .run）
-          for file in luci-theme-argon_*.run; do
-            if [ "$file" != "${{ env.RUN_FILE }}" ]; then
-              echo "Removing old file: $file"
-              git rm -f "$file"
-            fi
-          done
+          # 删除旧的 luci-theme-argon_*.run（除当前外）
+          find extra-packages/ -type f -name "luci-theme-argon_*.run" ! -name "${{ env.RUN_FILE }}" -delete
 
-          cd ../..
+          # 拷贝新 .run 文件
+          cp ../${{ env.RUN_FILE }} extra-packages/
 
-          # 拷贝新 .run 文件到目标目录
-          cp "${{ env.RUN_FILE }}" target-repo/extra-packages/
-
-          cd target-repo
-          git add extra-packages/"${{ env.RUN_FILE }}"
+          git add extra-packages/${{ env.RUN_FILE }}
           git commit -m "🤖 同步 luci-theme-argon: ${{ env.RUN_FILE }}"
           git push
