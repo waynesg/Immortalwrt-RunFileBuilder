@@ -1,7 +1,9 @@
-name: Build luci-app-argon-config runfile
+name: Build luci-app-argon-config
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
   build:
