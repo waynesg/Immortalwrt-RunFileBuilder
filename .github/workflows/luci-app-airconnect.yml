@@ -14,7 +14,7 @@ jobs:
       - name: Set environment variables (include version)
         run: |
           TARGET=x86_64
-          VERSION=$(curl -s https://api.github.com/repos/sbwml/luci-app-airconnect/releases/latest | jq -r '.body' | head -n1 | sed 's/\r//')
+          VERSION=$(curl -s https://api.github.com/repos/sbwml/luci-app-airconnect/releases/latest | jq -r '.tag_name')
           echo "TARGET=$TARGET" >> $GITHUB_ENV
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "PKG_NAME=luci-app-airconnect" >> $GITHUB_ENV
