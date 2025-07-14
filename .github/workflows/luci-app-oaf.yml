@@ -1,7 +1,9 @@
-name: Build OpenAppFilter runfile
+name: Build luci-app-oaf
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
   build:
