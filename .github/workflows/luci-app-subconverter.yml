@@ -1,7 +1,9 @@
-name: Build luci-app-subconverter .run package
+name: Build luci-app-subconverter
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
   build:
