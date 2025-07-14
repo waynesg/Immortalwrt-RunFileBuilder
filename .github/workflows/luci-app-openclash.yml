@@ -40,8 +40,7 @@ jobs:
 
       - name: Set output .run filename
         run: |
-          DATE=$(date +%Y%m%d)
-          echo "RUN_FILE=luci-app-openclash_x86_64_${DATE}.run" >> $GITHUB_ENV
+          echo "RUN_FILE=luci-app-openclash_x86_64_${{ env.version }}.run" >> $GITHUB_ENV
 
       - name: Create Meta directory for git
         run: mkdir Meta
@@ -105,13 +104,18 @@ jobs:
 
           git clone https://x-access-token:${{ secrets.REPO_TOKEN }}@github.com/waynesg/Immortalwrt-ImageBuilder.git target-repo
 
-          find target-repo/extra-packages/ -type f -name "openclash*.run" ! -name "openclash_x86_64_${{ env.LATEST_TAG }}.run" -delete
-          
-          cp makeself/*.run target-repo/extra-packages/
-          
           cd target-repo
+
+          CURRENT_RUN="luci-app-openclash_x86_64_${{ env.version }}.run"
+
+          # 删除除当前文件之外的所有 luci-app-openclash_x86_64_*.run
+          find extra-packages/ -type f -name "luci-app-openclash_x86_64_*.run" ! -name "$CURRENT_RUN" -exec rm -f {} +
+
+          # 拷贝当前构建的 .run 文件
+          cp ../makeself/"$CURRENT_RUN" extra-packages/
+
           git checkout main
-          
-          git add extra-packages/*.run
-          git commit -m "🤖 自动同步 Passwall RunFile: $(date +%F_%T)"
+          git add -u extra-packages/
+          git add extra-packages/"$CURRENT_RUN"
+          git commit -m "🤖 自动同步: $CURRENT_RUN"
           git push
