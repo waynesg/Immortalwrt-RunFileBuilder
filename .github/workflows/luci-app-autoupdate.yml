@@ -1,4 +1,4 @@
-name: Build luci-app-autoupdate .run package
+name: Build luci-app-autoupdate
 
 on:
   workflow_dispatch:
