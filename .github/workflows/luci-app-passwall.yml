@@ -6,10 +6,12 @@
 # Blog: wkdaily.cpolar.cn
 #=================================================
 
-name: Make Passwall run files
+name: Build luci-app-passwall
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
 
 jobs:
   build:
